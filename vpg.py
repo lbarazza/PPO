@@ -17,9 +17,10 @@ class vpg:
         self.policy = Actor(3, 1)
         self.policy_optimizer = torch.optim.Adam(self.policy.parameters(), lr=0.005)
         self.critic = Critic(3)
-        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=0.005)
+        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=0.001)
         self.gam = 0.96
-        self.lam = 0.93#0.95
+        self.lam = 0.93
+        self.eps = 0.2
 
     @torch.no_grad()
     def choose_action(self, state):
@@ -49,25 +50,34 @@ class vpg:
         return gae, rtg
 
 
-    def update(self):
+    def update(self, n_updates, v_updates):
         states, actions, R, T = self.memory.get()
-        v = self.critic(states)
-        gae, rtg = self.gae_rtg(R, v, T)
-
         n_ep = len(R)
-        dist = self.policy(states)
-        log_probs = dist.log_prob(actions)
 
-        vpg_loss = -1/n_ep * torch.sum(log_probs * gae)
+        v = self.critic(states)
+        A, rtg = self.gae_rtg(R, v, T)
+        policy_old = copy.deepcopy(self.policy)
+        log_probs_old = policy_old(states).log_prob(actions)
 
-        self.policy_optimizer.zero_grad()
-        vpg_loss.backward(retain_graph=True)
-        self.policy_optimizer.step()
+        for _ in range(n_updates):
+            log_probs = self.policy(states).log_prob(actions)
+            r = torch.exp(log_probs - log_probs_old)
 
-        critic_loss = 1/n_ep * F.mse_loss(v, rtg)
-        self.critic_optimizer.zero_grad()
-        critic_loss.backward()
-        self.critic_optimizer.step()
+            l_1 = r * A
+            l_2 = torch.clamp(r, 1-self.eps, 1+self.eps) * A
+
+            l_clip = -1/n_ep * torch.sum(torch.min(l_1, l_2))
+
+            self.policy_optimizer.zero_grad()
+            l_clip.backward(retain_graph=True)
+            self.policy_optimizer.step()
+
+        for _ in range(v_updates):
+            critic_loss = 1/n_ep * F.mse_loss(v, rtg)
+            self.critic_optimizer.zero_grad()
+            critic_loss.backward(retain_graph=True)
+            self.critic_optimizer.step()
+
         self.memory.clear()
 
-        return vpg_loss, critic_loss, v, actions
+        return l_clip, critic_loss, v, actions
