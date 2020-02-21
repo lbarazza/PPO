@@ -17,10 +17,10 @@ class vpg:
         self.policy = Actor(3, 1)
         self.policy_optimizer = torch.optim.Adam(self.policy.parameters(), lr=0.005)
         self.critic = Critic(3)
-        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=0.001)
+        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=0.005)
         self.gam = 0.96
         self.lam = 0.93
-        self.eps = 0.2
+        self.eps = 0.16
 
     @torch.no_grad()
     def choose_action(self, state):
@@ -59,6 +59,7 @@ class vpg:
         policy_old = copy.deepcopy(self.policy)
         log_probs_old = policy_old(states).log_prob(actions)
 
+        # TODO: implement batch training
         for _ in range(n_updates):
             log_probs = self.policy(states).log_prob(actions)
             r = torch.exp(log_probs - log_probs_old)

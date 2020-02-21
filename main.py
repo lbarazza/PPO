@@ -43,7 +43,7 @@ while True:
         if done:
 
             if n_episode%1==0:
-                vpg_loss, critic_loss, v_predicted, actions = agent.update()
+                vpg_loss, critic_loss, v_predicted, actions = agent.update(50, 1)
 
                 tb.add_scalar("Critic Loss", critic_loss, n_episode)
                 tb.add_histogram("Actions", actions)
