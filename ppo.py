@@ -17,7 +17,7 @@ class ppo:
         self.policy = Actor(3, 1)
         self.policy_optimizer = torch.optim.Adam(self.policy.parameters(), lr=0.005)
         self.critic = Critic(3)
-        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=0.005)
+        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=0.001)
         self.gam = 0.96
         self.lam = 0.93
         self.eps = 0.2
@@ -50,18 +50,24 @@ class ppo:
         return gae, rtg
 
 
-    def update(self, n_updates, v_updates):
+    def update(self, batch_size, n_updates, v_updates):
         states, actions, R, T = self.memory.get()
         n_ep = len(R)
 
-        v = self.critic(states)
-        A, rtg = self.gae_rtg(R, v, T)
+        v_ = self.critic(states)
+        A_, rtg_ = self.gae_rtg(R, v_, T)
         policy_old = copy.deepcopy(self.policy)
-        log_probs_old = policy_old(states).log_prob(actions)
+        log_probs_old_ = policy_old(states).log_prob(actions)
 
         # TODO: implement batch training
         for _ in range(n_updates):
-            log_probs = self.policy(states).log_prob(actions)
+            i = torch.randperm(T)[:batch_size]
+            v   = v_[i]
+            A   = A_[i]
+            rtg = rtg_[i]
+            log_probs_old = log_probs_old_[i]
+            log_probs = self.policy(states).log_prob(actions)[i]
+
             r = torch.exp(log_probs - log_probs_old)
 
             l_1 = r * A

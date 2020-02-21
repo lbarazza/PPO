@@ -7,7 +7,7 @@ import copy
 from collections import deque
 import numpy as np
 from torch.utils.tensorboard import SummaryWriter
-from vpg import vpg
+from ppo import ppo
 
 env = gym.make("Pendulum-v0")
 seed = 1234567#1234567
@@ -18,7 +18,7 @@ np.random.seed(seed)
 
 tb = SummaryWriter()
 
-agent = vpg()
+agent = ppo()
 
 n_episode = 0
 
@@ -43,7 +43,7 @@ while True:
         if done:
 
             if n_episode%1==0:
-                vpg_loss, critic_loss, v_predicted, actions = agent.update(50, 1)
+                vpg_loss, critic_loss, v_predicted, actions = agent.update(100, 50, 50)
 
                 tb.add_scalar("Critic Loss", critic_loss, n_episode)
                 tb.add_histogram("Actions", actions)
