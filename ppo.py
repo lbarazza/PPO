@@ -30,35 +30,16 @@ class ppo:
     def step(self, state, action, reward, done):
         self.memory.add(state, action, reward, done)
 
-    @torch.no_grad()
-    def gae_rtg(self, R, v, T):
-        j = 0
-        gae = torch.empty(T, 1)
-        rtg = torch.empty(T, 1)
-        for r in R:
-            for i in reversed(range(len(r))):
-                t = j + i
-
-                # calculate rewards to go
-                rtg[t] = r[i] + self.gam * (rtg[t+1] if i != len(r)-1 else 0)
-
-                # calculate GAE
-                delta_t = - v[t] + r[i] + self.gam * (v[t+1] if i != len(r)-1 else 0)
-                gae[t] = delta_t + self.gam * self.lam * (gae[t+1] if i != len(r)-1 else 0)
-
-            j += len(r)
-        return gae, rtg
-
+    # ( "_" subscript stands for "all of")
     def update(self, batch_size, n_updates, v_updates):
-        states, actions, R, T = self.memory.get()
-        n_ep = len(R)
+        states, actions, R_, T_ = self.memory.get()
+        n_ep = len(R_)
 
         v_ = self.critic(states)
-        A_, rtg_ = self.gae_rtg(R, v_, T)
+        A_, rtg_ = utils.gae_rtg((R_, v_, T_), self.gam, self.lam)
         policy_old = copy.deepcopy(self.policy)
         log_probs_old_ = policy_old(states).log_prob(actions)
 
-        # TODO: implement function to get batches
         for (v, A, rtg, log_probs_old), i in utils.sample_batch((v_, A_, rtg_, log_probs_old_), batch_size, n_updates): # 'i' is the index of the sampled items
             log_probs = self.policy(states).log_prob(actions)[i]
 
@@ -74,7 +55,6 @@ class ppo:
             l_clip.backward(retain_graph=True)
             self.policy_optimizer.step()
 
-        # FIXME: it is only updating on the last v batch
         for (v, rtg), _ in utils.sample_batch((v_, rtg_), batch_size, v_updates):
             critic_loss = 1/n_ep * F.mse_loss(v, rtg)
             self.critic_optimizer.zero_grad()
