@@ -10,13 +10,13 @@ from torch.utils.tensorboard import SummaryWriter
 from ppo import ppo
 
 env = gym.make("Pendulum-v0")
-seed = 1234567#1234567
+seed = 123456#1234567
 #random.seed(seed)
 torch.manual_seed(seed)
 env.seed(seed)
 np.random.seed(seed)
 
-tb = SummaryWriter()
+tb = SummaryWriter()#comment=f'lr_policy={}, lr_critic={}')
 
 agent = ppo()
 
@@ -43,7 +43,7 @@ while True:
         if done:
 
             if n_episode%1==0:
-                vpg_loss, critic_loss, v_predicted, actions = agent.update(100, 50, 50)
+                vpg_loss, critic_loss, v_predicted, actions = agent.update(100, 80, 25)#100, 50, 25
 
                 tb.add_scalar("Critic Loss", critic_loss, n_episode)
                 tb.add_histogram("Actions", actions)
