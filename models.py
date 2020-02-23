@@ -8,6 +8,7 @@ from collections import deque
 import numpy as np
 from torch.utils.tensorboard import SummaryWriter
 
+
 class Actor(nn.Module):
     def __init__(self, nS, nA):
         super(Actor, self).__init__()
