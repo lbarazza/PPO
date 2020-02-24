@@ -27,8 +27,8 @@ def sample_batch(x, batch_size, n_samples):
 def gae_rtg(x, gam, lam):
     """
     This function calculates the rewards to go and at the same time the
-    advantages with GAE. This function works even if the length of the episodes
-    is not the same across all of them.
+    advantages with GAE. It works even if the length of the episodes
+    is not the same for all of them.
 
     Args:
         x (tuple): Stores the rewards (R) as a list, the value estimates from

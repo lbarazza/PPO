@@ -38,7 +38,8 @@ agent = PPOAgent(
     eps=eps,
     batch_size=batch_size,
     policy_updates=policy_updates,
-    v_updates=v_updates
+    v_updates=v_updates,
+    update_freq=update_freq
 )
 
 n_episode = 0
@@ -56,15 +57,13 @@ while True:
 
         action = [agent.choose_action(torch.tensor(state).unsqueeze(0).float()).item()]
         next_state, reward, done, info = env.step(action) # take a random action
-        agent.step(state, action, reward, done)
+        critic_loss = agent.step(state, action, reward, done)
 
         state = next_state
         episode_reward += reward
         if done:
             tb.add_scalar("Rewards", episode_reward, n_episode)
-            if n_episode%update_freq==0:
-                critic_loss = agent.update()
-                tb.add_scalar("Critic Loss", critic_loss, n_episode)
+            if not None: tb.add_scalar("Critic Loss", critic_loss, n_episode)
             returns.append(episode_reward)
             print("Episode n. {:6d}   Return: {:9.2f}   Avg. Return: {:9.2f}".format(n_episode, episode_reward, np.mean(returns)))
             break

@@ -9,7 +9,36 @@ import utils
 
 
 class PPOAgent:
-    def __init__(self, nS, nA, lr_policy, lr_critic, gam, lam, eps, batch_size, policy_updates, v_updates):
+    """
+    Agent using Proximal Policy Optimization by clipping
+
+    Args:
+        nS (int): Dimension of observation space
+        nA (int): Dimension of action space
+        lr_policy (float): Learning rate of the policy
+        lr_critic (float): Learning rate of the critic
+        gam (float): Value of gamma
+        lam (float): Value of lambda (for GAE)
+        eps (float): Value of epsilon
+        batch_size (int): batch size for policy and critic updates
+        policy_updates (int): number of ppo training iterations per call to
+                              the "update" method
+        v_updates (int): number of critic training epochs per call to "update"
+                         method
+        update_freq (int): Update agent every update_freq episodes
+
+    Attributes:
+        memory (Memory): Memory where all the trajectories' information get stored
+        policy (Actor): Neural network for the policy
+        policy_optimizer (torch.optim): Optimizer for the policy
+        critic (Critic): Neural network for the critic
+        critic_optimizer (torch.optim): Optimizer for the critic
+        nS, nA, lr_policy, lr_critic, gam, lam, eps, batch_size, policy_updates,
+        v_updates, update_freq : see "Args"
+        n_tau (int): number of current trajectory
+    """
+
+    def __init__(self, nS, nA, lr_policy, lr_critic, gam, lam, eps, batch_size, policy_updates, v_updates, update_freq):
         self.memory = Memory()
         self.policy = Actor(nS, nA)
         self.policy_optimizer = torch.optim.Adam(self.policy.parameters(), lr=lr_policy)
@@ -21,15 +50,40 @@ class PPOAgent:
         self.batch_size = batch_size
         self.policy_updates = policy_updates
         self.v_updates = v_updates
+        self.update_freq = update_freq
+        self.n_tau = 1
 
     @torch.no_grad()
     def choose_action(self, state):
+        """
+        Returns an action from the observed state.
+        """
+
         return self.policy(state).sample()
 
     def step(self, state, action, reward, done):
+        """
+        Central Unit controlling everything. It adds to the memory and
+        calls the update method when needed.
+
+        Returns:
+            (torch.tensor): Critic loss if done, otherwise None
+        """
+
         self.memory.add(state, action, reward, done)
+        if done and self.n_tau % self.update_freq == 0:
+            self.n_tau += 1
+            return self.update()
+        return None
 
     def update(self):
+        """
+        Where policy and critic updates get computed.
+
+        Returns:
+            (torch.tensor): Critic loss
+        """
+
         states, actions, R, T = self.memory.get()
         n_ep = len(R)
 
