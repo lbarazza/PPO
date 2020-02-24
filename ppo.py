@@ -112,7 +112,7 @@ class PPOAgent:
             # TODO: merge policy and critic
 
             # surragate loss function for PPO
-            l_clip = -1/n_ep * torch.mean(torch.min(l_1, l_2))
+            l_clip = -torch.mean(torch.min(l_1, l_2))
 
             # update the policy
             self.policy_optimizer.zero_grad()
@@ -123,7 +123,7 @@ class PPOAgent:
         # to update the value function.
         for (v_, rtg_), _ in utils.sample_batch((v, rtg), self.batch_size, self.v_updates):
             # compute the loss
-            critic_loss = 1/n_ep * F.mse_loss(v_, rtg_)
+            critic_loss = F.mse_loss(v_, rtg_)
 
             # update the critic
             self.critic_optimizer.zero_grad()
