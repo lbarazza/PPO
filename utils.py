@@ -60,3 +60,21 @@ def gae_rtg(x, gam, lam):
         j += len(r)
 
     return gae, rtg
+
+def save_agent(agent, n_episode, checkpoint_path):
+    torch.save({
+        "policy": agent.policy.state_dict(),
+        "critic": agent.critic.state_dict(),
+        "policy_optimizer": agent.policy_optimizer.state_dict(),
+        "critic_optimizer": agent.critic_optimizer.state_dict(),
+        "n_episode": n_episode
+    }, checkpoint_path)
+
+def load_agent(agent, checkpoint_path):
+    checkpoint = torch.load(checkpoint_path)
+    agent.policy.load_state_dict(checkpoint["policy"])
+    agent.critic.load_state_dict(checkpoint["critic"])
+    agent.policy_optimizer.load_state_dict(checkpoint["policy_optimizer"])
+    agent.critic_optimizer.load_state_dict(checkpoint["critic_optimizer"])
+    n_episode = checkpoint["n_episode"]
+    return agent, n_episode

@@ -4,7 +4,10 @@ from collections import deque
 import numpy as np
 from torch.utils.tensorboard import SummaryWriter
 from ppo import PPOAgent
+from pathlib import Path
 from datetime import datetime
+import utils
+
 
 # create environment
 env = gym.make("Pendulum-v0")
@@ -16,14 +19,14 @@ env.seed(seed)
 np.random.seed(seed)
 
 # set hyperparameters
-lr_policy=0.001
-lr_critic=0.005
+lr_policy=0.01
+lr_critic=0.0005
 gam=0.96
 lam=0.93
 eps=0.20
-batch_size=100
-policy_updates=80
-v_updates=25
+batch_size=100#150
+policy_updates=80#100
+v_updates=50
 update_freq=1
 
 # initialize tensorboard
@@ -49,6 +52,19 @@ agent = PPOAgent(
 n_episode = 0
 returns = deque(maxlen=100)
 
+# initilize parameters for saving training
+save_freq = 10
+run_name = "test3"
+checkpoint_path = 'checkpoints/' + run_name + '.tar'
+checkpoint_path_best = 'checkpoints/' + run_name + '_best' + '.tar'
+checkpoint_file = Path(checkpoint_path)
+
+# load already existing agent if possible
+if checkpoint_file.is_file():
+    agent, n_episode = utils.load_agent(agent, checkpoint_path)
+
+
+best_avg = -float("inf")
 while True:
     n_episode += 1
 
@@ -85,8 +101,21 @@ while True:
             # add to the list of last 100 rewards
             returns.append(episode_reward)
 
+            # calculate average return
+            avg = np.mean(returns)
+
             # print some basic stats in the terminal
-            print("Episode n. {:6d}   Return: {:9.2f}   Avg. Return: {:9.2f}".format(n_episode, episode_reward, np.mean(returns)))
+            print("Episode n. {:6d}   Return: {:9.2f}   Avg. Return: {:9.2f}".format(n_episode, episode_reward, avg))
+
+            # save best agent so far
+            if avg > best_avg:
+                best_avg = avg
+                utils.save_agent(agent, n_episode, checkpoint_path_best)
+
+            # save current agent
+            if n_episode % save_freq == 0:
+                utils.save_agent(agent, n_episode, checkpoint_path)
+
             break
 
 # close the environment and tensorboard

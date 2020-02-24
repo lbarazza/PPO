@@ -62,7 +62,7 @@ class Critic(nn.Module):
             x (torch.tensor): input of the network
 
         Returns:
-            (torch.tensor): predicted value of the V function
+            v (torch.tensor): predicted value of the V function
         """
 
         x = F.relu(self.h(x))
