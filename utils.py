@@ -19,6 +19,7 @@ def sample_batch(x, batch_size, n_samples):
         i (torch.tensor): Indices used to sample
     """
 
+    if batch_size == -1 or batch_size > x[0].shape[0]: batch_size = x[0].shape[0]
     for _ in range(n_samples):
         i = torch.randperm(batch_size)[:n_samples]
         yield (j[i] for j in x), i
@@ -76,5 +77,19 @@ def load_agent(agent, checkpoint_path):
     agent.critic.load_state_dict(checkpoint["critic"])
     agent.policy_optimizer.load_state_dict(checkpoint["policy_optimizer"])
     agent.critic_optimizer.load_state_dict(checkpoint["critic_optimizer"])
+    n_episode = checkpoint["n_episode"]
+    return agent, n_episode
+
+def save_agent_onenet(agent, n_episode, checkpoint_path):
+    torch.save({
+        "policy": agent.policy.state_dict(),
+        "policy_optimizer": agent.policy_optimizer.state_dict(),
+        "n_episode": n_episode
+    }, checkpoint_path)
+
+def load_agent_onenet(agent, checkpoint_path):
+    checkpoint = torch.load(checkpoint_path)
+    agent.policy.load_state_dict(checkpoint["policy"])
+    agent.policy_optimizer.load_state_dict(checkpoint["policy_optimizer"])
     n_episode = checkpoint["n_episode"]
     return agent, n_episode

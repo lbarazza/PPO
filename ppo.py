@@ -84,7 +84,6 @@ class PPOAgent:
 
         # get states, actions, rewards and total timesteps from memory
         states, actions, R, T = self.memory.get()
-        n_ep = len(R)
 
         # compute value estimates for the states
         v = self.critic(states)

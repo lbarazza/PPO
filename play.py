@@ -10,7 +10,7 @@ import utils
 
 
 # create environment
-env = gym.make("Pendulum-v0")
+env = gym.make("LunarLanderContinuous-v2")
 
 # set random seeds
 seed = 123456
@@ -19,9 +19,9 @@ env.seed(seed)
 np.random.seed(seed)
 
 # set hyperparameters
-lr_policy=0.01
-lr_critic=0.0005
-gam=0.96
+lr_policy=0.005
+lr_critic=0.005
+gam=0.99
 lam=0.93
 eps=0.20
 batch_size=100#150
@@ -51,7 +51,7 @@ returns = deque(maxlen=100)
 
 # initilize parameters for saving training
 save_freq = 10
-run_name = "test3"
+run_name = "Btest2"
 checkpoint_path = 'checkpoints/' + run_name + '_best' + '.tar'
 checkpoint_file = Path(checkpoint_path)
 
@@ -74,7 +74,7 @@ while True:
         # the reward is of the same type as the action that we pass in
 
         # choose action
-        action = [agent.choose_action(torch.tensor(state).unsqueeze(0).float()).item()]
+        action = agent.choose_action(torch.tensor(state).unsqueeze(0).float()).squeeze(0).numpy()
 
         # apply the action in the environment and store the outcomes
         next_state, reward, done, info = env.step(action)
