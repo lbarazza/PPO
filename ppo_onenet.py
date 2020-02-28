@@ -36,13 +36,15 @@ class PPOAgentOneNet:
         v_updates, update_freq : see "Args"
     """
 
-    def __init__(self, nS, nA, lr_policy, lr_critic, gam, lam, eps, batch_size, policy_updates, update_freq):
+    def __init__(self, nS, nA, lr, gam, lam, eps, c1, c2, batch_size, policy_updates, update_freq):
         self.memory = Memory()
         self.policy = ActorCritic(nS, nA)
-        self.policy_optimizer = torch.optim.Adam(self.policy.parameters(), lr=lr_policy)
+        self.policy_optimizer = torch.optim.Adam(self.policy.parameters(), lr=lr)
         self.gam = gam
         self.lam = lam
         self.eps = eps
+        self.c1 = c1
+        self.c2 = c2
         self.batch_size = batch_size
         self.policy_updates = policy_updates
         self.update_freq = update_freq
@@ -111,7 +113,7 @@ class PPOAgentOneNet:
             S = -torch.sum(log_probs_ * torch.exp(log_probs_))
 
             # surragate loss function for PPO
-            l_clip = -torch.mean(torch.min(l_1, l_2), dim=0) + 0.0005 * F.mse_loss(v_, rtg_) - 0.0001 * S
+            l_clip = -torch.mean(torch.min(l_1, l_2), dim=0) + self.c1 * F.mse_loss(v_, rtg_) - self.c2 * S
 
             # update the policy
             self.policy_optimizer.zero_grad()

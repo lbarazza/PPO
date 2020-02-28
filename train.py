@@ -11,7 +11,7 @@ import utils
 
 
 # create environment
-env = gym.make("Pendulum-v0")#"LunarLanderContinuous-v2")
+env = gym.make("LunarLanderContinuous-v2")
 
 # set random seeds
 seed = 123456
@@ -20,29 +20,31 @@ env.seed(seed)
 np.random.seed(seed)
 
 # set hyperparameters
-lr_policy=0.01#0.005
-lr_critic=0.0005#0.005
-gam=0.96#0.99
-lam=0.93#0.96
+lr=0.005
+gam=0.99#0.99
+lam=0.98#0.96
 eps=0.20
-batch_size=100#150
-policy_updates=80#100
+c1=0.001
+c2=0.01
+batch_size=50#150
+policy_updates=10#100
 v_updates=50
 update_freq=1
 
 # initialize tensorboard
-comment = datetime.now().strftime('%b%d_%H-%M-%S') + f' lr_policy={lr_policy} lr_critic={lr_critic} gamma={gam} lambda={lam} epsilon={eps} batch_size={batch_size} policy_updates={policy_updates} v_updates={v_updates} update_freq={update_freq}'
+comment = datetime.now().strftime('%b%d_%H-%M-%S') + f' lr={lr} gamma={gam} lambda={lam} epsilon={eps} c1={c1} c2={c2} batch_size={batch_size} policy_updates={policy_updates} v_updates={v_updates} update_freq={update_freq}'
 tb = SummaryWriter("runs/" + comment)
 
 # initilize PPO agent
 agent = PPOAgentOneNet(
     nS = env.observation_space.shape[0],
     nA = env.action_space.shape[0],
-    lr_policy=lr_policy,
-    lr_critic=lr_critic,
+    lr=lr,
     gam=gam,
     lam=lam,
     eps=eps,
+    c1=c1,
+    c2=c2,
     batch_size=batch_size,
     policy_updates=policy_updates,
     update_freq=update_freq
@@ -54,7 +56,7 @@ returns = deque(maxlen=100)
 
 # initilize parameters for saving training
 save_freq = 10
-run_name = "test16"
+run_name = "test37"
 checkpoint_path = 'checkpoints/' + run_name + '.tar'
 checkpoint_path_best = 'checkpoints/' + run_name + '_best' + '.tar'
 checkpoint_file = Path(checkpoint_path)
@@ -71,10 +73,13 @@ while True:
     # reset environment and reward for the current episode
     episode_reward = 0
     state = env.reset()
-
+    z = 0
     while True:
+        z+=1
         # render environment
-        env.render()
+
+        ## TEST ##
+        #env.render()
 
         # action needs to be a list since this accepts Box Actions
         # the reward is of the same type as the action that we pass in
@@ -105,7 +110,7 @@ while True:
             avg = np.mean(returns)
 
             # print some basic stats in the terminal
-            print("Episode n. {:6d}   Return: {:9.2f}   Avg. Return: {:9.2f}".format(n_episode, episode_reward, avg))
+            print("Episode n. {:6d}   Return: {:9.2f}   Avg. Return: {:9.2f}".format(n_episode, episode_reward, avg), "     ", z)
 
             # save best agent so far
             if avg > best_avg:
